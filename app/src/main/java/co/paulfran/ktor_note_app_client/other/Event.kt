@@ -11,6 +11,6 @@ open class Even<out T>(private val content: T) {
         hasBeenHandled = true
         content
     }
-    
+
     fun peekContent() = content
 }
