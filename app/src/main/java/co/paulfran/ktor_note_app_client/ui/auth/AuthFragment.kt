@@ -12,6 +12,8 @@ import co.paulfran.ktor_note_app_client.R
 import co.paulfran.ktor_note_app_client.data.remote.BasicAuthInterceptor
 import co.paulfran.ktor_note_app_client.other.Constants.KEY_LOGGED_IN_EMAIL
 import co.paulfran.ktor_note_app_client.other.Constants.KEY_LOGGED_IN_PASSWORD
+import co.paulfran.ktor_note_app_client.other.Constants.NO_EMAIL
+import co.paulfran.ktor_note_app_client.other.Constants.NO_PASSWORD
 import co.paulfran.ktor_note_app_client.other.Status
 import co.paulfran.ktor_note_app_client.ui.BaseFragment
 import com.google.android.material.snackbar.Snackbar
@@ -36,6 +38,11 @@ class AuthFragment : BaseFragment(R.layout.fragment_auth){
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        if (isLoggedIn()) {
+            authenticateApi(currentEmail ?: "", currentPassword ?: "")
+            redirectLogin()
+        }
+
         // disable landscape mode
         requireActivity().requestedOrientation = SCREEN_ORIENTATION_PORTRAIT
         subscribeTpObservers()
@@ -56,6 +63,12 @@ class AuthFragment : BaseFragment(R.layout.fragment_auth){
             viewModel.login(email, password)
         }
 
+    }
+
+    private fun isLoggedIn(): Boolean {
+        currentEmail = sharedPref.getString(KEY_LOGGED_IN_EMAIL, NO_EMAIL) ?: NO_EMAIL
+        currentPassword = sharedPref.getString(KEY_LOGGED_IN_PASSWORD, NO_PASSWORD) ?: NO_PASSWORD
+        return currentEmail != NO_EMAIL && currentPassword != NO_PASSWORD
     }
 
     private fun authenticateApi(email: String, password: String) {
