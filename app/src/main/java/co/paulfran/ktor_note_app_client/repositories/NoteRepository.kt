@@ -2,10 +2,14 @@ package co.paulfran.ktor_note_app_client.repositories
 
 import android.app.Application
 import co.paulfran.ktor_note_app_client.data.local.NoteDao
+import co.paulfran.ktor_note_app_client.data.local.entities.Note
 import co.paulfran.ktor_note_app_client.data.remote.NoteApi
 import co.paulfran.ktor_note_app_client.data.remote.requests.AccountRequest
 import co.paulfran.ktor_note_app_client.other.Resource
+import co.paulfran.ktor_note_app_client.other.checkForInternetConnection
+import co.paulfran.ktor_note_app_client.other.networkBoundResource
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -14,6 +18,24 @@ class NoteRepository @Inject constructor(
     private val noteApi: NoteApi,
     private val context: Application
 ) {
+    fun getAllNotes(): Flow<Resource<List<Note>>> {
+        return networkBoundResource(
+                query = {
+                    noteDao.getAllNotes()
+                },
+                fetch = {
+                    noteApi.getNotes()
+                },
+                saveFetchResult = { response ->
+                    response.body()?.let {
+                        // TODO: insert notes in database
+                    }
+                },
+                shouldFetch = {
+                    checkForInternetConnection(context)
+                }
+        )
+    }
     suspend fun register(email: String, password: String) = withContext(Dispatchers.IO) {
         try {
             val response = noteApi.register(AccountRequest(email, password))
