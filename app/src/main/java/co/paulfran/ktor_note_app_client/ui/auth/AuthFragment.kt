@@ -1,4 +1,4 @@
-package co.paulfran.ktor_note_app_client.ui.auth
+                                                                                                                                                                                                                                                                                                                                                                    package co.paulfran.ktor_note_app_client.ui.auth
 
 import android.content.SharedPreferences
 import android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT

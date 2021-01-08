@@ -2,9 +2,11 @@ package co.paulfran.ktor_note_app_client.repositories
 
 import android.app.Application
 import co.paulfran.ktor_note_app_client.data.local.NoteDao
+import co.paulfran.ktor_note_app_client.data.local.entities.LocallyDeletedNoteId
 import co.paulfran.ktor_note_app_client.data.local.entities.Note
 import co.paulfran.ktor_note_app_client.data.remote.NoteApi
 import co.paulfran.ktor_note_app_client.data.remote.requests.AccountRequest
+import co.paulfran.ktor_note_app_client.data.remote.requests.DeleteNoteRequest
 import co.paulfran.ktor_note_app_client.other.Resource
 import co.paulfran.ktor_note_app_client.other.checkForInternetConnection
 import co.paulfran.ktor_note_app_client.other.networkBoundResource
@@ -28,7 +30,7 @@ class NoteRepository @Inject constructor(
                 },
                 saveFetchResult = { response ->
                     response.body()?.let {
-                        // TODO: insert notes in database
+                        insertNotes(it)
                     }
                 },
                 shouldFetch = {
@@ -61,6 +63,7 @@ class NoteRepository @Inject constructor(
             Resource.error("Could'nt connect to the servers. Check your internet connection", null)
         }
     }
+
     suspend fun insertNote(note:Note) {
         val response = try {
             noteApi.addNote(note)
@@ -71,6 +74,32 @@ class NoteRepository @Inject constructor(
             noteDao.insertNote(note.apply { isSynced = true })
         } else {
             noteDao.insertNote(note)
+        }
+    }
+
+    suspend fun insertNotes(notes: List<Note>) {
+        notes.forEach {
+            insertNote(it)
+        }
+    }
+
+    suspend fun getNoteById(noteId: String) = noteDao.getNoteById(noteId)
+
+    suspend fun deleteLocallyDeletedNoteId(deletedNoteId: String) {
+        noteDao.deleteAllLocallyDeletedNoteId(deletedNoteId)
+    }
+
+    suspend fun deleteNote(noteId: String) {
+        val response = try {
+            noteApi.deleteNote(DeleteNoteRequest(noteId))
+        } catch (e: Exception) {
+            null
+        }
+        noteDao.deleteNoteById(noteId)
+        if (response == null || !response.isSuccessful) {
+            noteDao.insertLocallyDeletedNoteId(LocallyDeletedNoteId(noteId))
+        } else {
+            deleteLocallyDeletedNoteId(noteId)
         }
     }
 }

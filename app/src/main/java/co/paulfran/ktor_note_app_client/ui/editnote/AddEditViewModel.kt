@@ -13,7 +13,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 
-class AddEditViewModel @ViewModelInject constructor(
+class AddEditViewModel  @ViewModelInject constructor(
         private val repository: NoteRepository
 ) : ViewModel() {
 
@@ -24,9 +24,9 @@ class AddEditViewModel @ViewModelInject constructor(
         repository.insertNote(note)
     }
 
-    fun getNoteById(noteId: String) = viewModelScope.launch {
+    fun getNoteById(noteID: String) = viewModelScope.launch {
         _note.postValue(Event(Resource.loading(null)))
-        val note = repository.getNoteById(noteId)
+        val note = repository.getNoteById(noteID)
         note?.let {
             _note.postValue(Event(Resource.success(it)))
         } ?: _note.postValue(Event(Resource.error("Note not found", null)))

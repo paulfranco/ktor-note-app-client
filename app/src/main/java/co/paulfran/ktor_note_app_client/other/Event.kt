@@ -1,6 +1,6 @@
 package co.paulfran.ktor_note_app_client.other
 
-open class Even<out T>(private val content: T) {
+open class Event<out T>(private val content: T) {
 
     var hasBeenHandled = false
     private set
