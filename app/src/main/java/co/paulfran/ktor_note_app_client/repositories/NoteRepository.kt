@@ -61,4 +61,16 @@ class NoteRepository @Inject constructor(
             Resource.error("Could'nt connect to the servers. Check your internet connection", null)
         }
     }
+    suspend fun insertNote(note:Note) {
+        val response = try {
+            noteApi.addNote(note)
+        } catch (e: Exception) {
+            null
+        }
+        if (response != null && response.isSuccessful) {
+            noteDao.insertNote(note.apply { isSynced = true })
+        } else {
+            noteDao.insertNote(note)
+        }
+    }
 }
