@@ -6,6 +6,7 @@ import co.paulfran.ktor_note_app_client.data.local.entities.LocallyDeletedNoteId
 import co.paulfran.ktor_note_app_client.data.local.entities.Note
 import co.paulfran.ktor_note_app_client.data.remote.NoteApi
 import co.paulfran.ktor_note_app_client.data.remote.requests.AccountRequest
+import co.paulfran.ktor_note_app_client.data.remote.requests.AddOwnerRequest
 import co.paulfran.ktor_note_app_client.data.remote.requests.DeleteNoteRequest
 import co.paulfran.ktor_note_app_client.other.Resource
 import co.paulfran.ktor_note_app_client.other.checkForInternetConnection
@@ -13,6 +14,7 @@ import co.paulfran.ktor_note_app_client.other.networkBoundResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import retrofit2.Response
 import javax.inject.Inject
 
 class NoteRepository @Inject constructor(
@@ -26,11 +28,12 @@ class NoteRepository @Inject constructor(
                     noteDao.getAllNotes()
                 },
                 fetch = {
-                    noteApi.getNotes()
+                    syncNotes()
+                    currentNotesResponse
                 },
                 saveFetchResult = { response ->
-                    response.body()?.let {
-                        insertNotes(it)
+                    response?.body()?.let {
+                        insertNotes(it.onEach { note -> note.isSynced = true })
                     }
                 },
                 shouldFetch = {
@@ -100,6 +103,37 @@ class NoteRepository @Inject constructor(
             noteDao.insertLocallyDeletedNoteId(LocallyDeletedNoteId(noteId))
         } else {
             deleteLocallyDeletedNoteId(noteId)
+        }
+    }
+
+    private var currentNotesResponse: Response<List<Note>>? = null
+
+    suspend fun syncNotes() {
+        val locallyDeletedNoteIds = noteDao.getAllLocallyDeletedNoteIds()
+        locallyDeletedNoteIds.forEach { id -> deleteNote(id.deletedNoteId) }
+
+        val unsyncedNotes = noteDao.getAllUnSyncedNotes()
+        unsyncedNotes.forEach { note -> insertNote(note) }
+
+        currentNotesResponse = noteApi.getNotes()
+        currentNotesResponse?.body()?.let { notes ->
+            noteDao.deleteAllNotes()
+            insertNotes(notes.onEach { note -> note.isSynced = true })
+        }
+    }
+
+    fun observeNoteById(noteId: String) = noteDao.observeNoteById(noteId)
+
+    suspend fun addOwnerToNote(owner: String, noteID: String) = withContext(Dispatchers.IO) {
+        try {
+            val response = noteApi.addOwnerToNote(AddOwnerRequest(owner, noteID))
+            if(response.isSuccessful && response.body()!!.successful) {
+                Resource.success(response.body()?.message)
+            } else {
+                Resource.error(response.body()?.message ?: response.message(), null)
+            }
+        } catch(e: Exception) {
+            Resource.error("Couldn't connect to the servers. Check your internet connection", null)
         }
     }
 }

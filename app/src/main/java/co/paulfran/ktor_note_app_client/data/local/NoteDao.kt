@@ -41,4 +41,7 @@ interface NoteDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLocallyDeletedNoteId(locallyDeletedNoteId: LocallyDeletedNoteId)
+
+    @Query("DELETE FROM notes")
+    suspend fun deleteAllNotes()
 }
